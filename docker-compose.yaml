@@ -1,0 +1,59 @@
+services:
+
+  db:
+    container_name: postgres_db
+    image: postgres:17.3
+    hostname: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d twitter_clone"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    env_file:
+      - app.env
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - twitter_net
+    ports:
+      - "5432:5432"
+    restart: always
+
+  api:
+    container_name: twitter_app
+    build: .
+    env_file:
+      - app.env
+    networks:
+      - twitter_net
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - media:/media
+    depends_on:
+      - db
+    ports:
+      - 8000:8000
+
+  nginx_web:
+    container_name: nginx_web
+    build:
+      context: ./server/.
+    volumes:
+      - media:/usr/share/nginx/html/static/media
+      - ./server/static/:/usr/share/nginx/html/static
+    depends_on:
+      - api
+      - db
+    ports:
+      - 80:80
+    networks:
+      - twitter_net
+
+
+networks:
+  twitter_net:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  media:
