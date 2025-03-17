@@ -25,7 +25,8 @@ async def follow_user(
     try:
         user_to_follow: Optional[User] = (
             (await db.execute(select(User).filter(User.id == user_id)))
-            .scalars().first()
+            .scalars()
+            .first()
         )
         if not user_to_follow:
             raise HTTPException(status_code=404, detail="User not found")
